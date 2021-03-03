@@ -5,3 +5,8 @@ Maximun likelihood estimate attack is for cross-column attack which may exploit 
 Any determinsitc encryption is valid for the test, and for convenience, therefore, we use self-made encryption algorithm to see how frequency leakage will help an adversary to recover plaintexts of a certain column.
 
 All the parameters are described in the comments.
+
+Attack algorithms' archetypes are described in the following papers:
+1. Inference Attacks on Property-Preserving Encrypted Databases. Naveed et.al.;
+2. Leakage-abuse attacks against searchable encryption. Paul Grubbs et.al.;
+3. The tao of inference in privacy-protected databases. Paul Grubbs et.al.;
