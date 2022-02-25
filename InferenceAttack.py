@@ -16,6 +16,7 @@
  """
 import numpy as np
 import Hungarian
+import Utils
 
 # If |C_k| != |M_k|, we simply pad M_k with dummy values.
 def padAuxiliary(auxiliaryDataset, ciphertext):
@@ -39,20 +40,14 @@ def padAuxiliary(auxiliaryDataset, ciphertext):
       for j in range(randomFrequency):
         auxiliaryDataset.append(randomVal)
 
-def calculateHistogram(samples):
-  labels, counts = np.unique(samples, return_counts=True)
-  hist = dict(zip(labels, counts))
-  hist = sorted(hist.items(), key=lambda x: x[1], reverse=True)
-  return hist
-
 def prepareData(x, y):
   # First convert them to strings.
   x = [str(_) for _ in x]
   padAuxiliary(x, y)
 
   # Then calculate the histograms for auxiliary dataset and the ciphertext column.
-  histX = calculateHistogram(x)
-  histY = calculateHistogram(y)
+  histX = Utils.calculateHistogram(x)
+  histY = Utils.calculateHistogram(y)
 
   return histX, histY
 
@@ -80,7 +75,6 @@ def LPOpmization(auxiliaryDataset, ciphertext, p=2):
   print(histAuxiliary, histCiphertext)
 
   # Start to compute the l_p optimization.
-  guess = []
   dimension = len(histAuxiliary)
   costMatrix = [[0 for i in range(dimension)] for j in range(dimension)]
 
@@ -90,5 +84,15 @@ def LPOpmization(auxiliaryDataset, ciphertext, p=2):
       LPDistance = np.abs(histCiphertext[i][1] - histAuxiliary[j][1])
       costMatrix[i][j] = LPDistance ** p
 
-  res = Hungarian.hungarian(np.matrix(np.array(costMatrix).reshape(dimension, dimension)))
-  print(res)
+  guess = Hungarian.hungarian(np.matrix(np.array(costMatrix).reshape(dimension, dimension)))
+  ans = []
+  # Transform the guess array.
+  for i in range(len(guess[0])):
+     ans.append((histCiphertext[guess[0][i]][0], histAuxiliary[guess[0][i]][0]))
+  return ans
+
+# This algorithm implements the MLE attack written in the paper The Tao of Inference in 
+# Privacy-Preserving Databases by Grubbs et al, in VLDB 2018.
+# Other literature has pointed out that frequency analysis is also MLE.
+def maximumLikelihoodEstimationAttack(auxiliaryDataset, ciphertext):
+  histAuxiliary, histCiphertext = prepareData(auxiliaryDataset, ciphertext)

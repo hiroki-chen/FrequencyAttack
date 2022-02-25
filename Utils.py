@@ -77,3 +77,14 @@ def calculateAccuracy(guess, real):
 
 if __name__ == '__main__':
   print(encryptAESECB(['12jfisa', 'fas', 'fas'], 'fuck'))
+
+def calculateHistogram(samples):
+  labels, counts = np.unique(samples, return_counts=True)
+  hist = dict(zip(labels, counts))
+  hist = sorted(hist.items(), key=lambda x: x[1], reverse=True)
+  return hist
+
+def calculateVariance(group):
+  data = np.repeat([_[0] for _ in group], [_[1] for _ in group])
+  print(data)
+  return np.var(data)
