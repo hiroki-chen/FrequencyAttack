@@ -38,7 +38,6 @@ def encryptAESECB(plaintext, masterKey):
   plaintext = [str(_) for _ in plaintext]
   # Get a key.
   hashKey = hashlib.sha256(masterKey.encode()).digest()
-  print(hashKey)
 
   # AES ECB mode encryption
   map = []
@@ -85,6 +84,9 @@ def calculateHistogram(samples):
   return hist
 
 def calculateVariance(group):
-  data = np.repeat([_[0] for _ in group], [_[1] for _ in group])
-  print(data)
-  return np.var(data)
+  data = np.array([_[1] for _ in group])
+  return np.var(data.astype(np.float))
+
+def checkSalt(salt, salts):
+  # TODO.
+  return True

@@ -14,14 +14,16 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  """
+import copy
 import numpy as np
 import Utils
 import tqdm
 import logging
 import sys
+import string
 
 class Smoother:
-  def __init__(self, distribution, vThreshold, maximumNumber, key):
+  def __init__(self, distribution, vThreshold, maximumNumber, key, p, saltLen):
     '''
     @param distribution: The expected distribution of the plaintext column.
     @param alpha: The maximum value of variance for any ciphertext group.
@@ -31,10 +33,15 @@ class Smoother:
     self.vThreshold = vThreshold
     self.maximumNumber = maximumNumber
     self.key = key
+    self.groupID = 0
+    self.p = p
+    self.saltLen = saltLen
+    # Maps from set id to salt array.
     self.salts = {}
     # This is a group for ciphertext with similar frequency.
-    self.ciphertextGroups = []
-    self.ciphertextFrequency = {}
+    self.plaintextGroups = {}
+    self.plaintextFrequency = {}
+    self.plaintextToSetID = {}
 
     # Create a logger to stdout.
     root = logging.getLogger()
@@ -44,45 +51,111 @@ class Smoother:
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root.addHandler(handler)
+
+    self.ALPHABET = np.array(list(string.ascii_letters))
   
   def encrypt(self, plaintext):
     logging.debug("Start to encrypt plaintexts!")
+    ciphertexts = []
+
     for x in tqdm.tqdm(plaintext):
-      if x not in self.ciphertextFrequency.keys():
-        self.ciphertextFrequency[x] = 1
+      if x not in self.plaintextFrequency.keys() and \
+         x not in self.plaintextToSetID.keys():
+        # If not found we also need to create a new group for x.
+        self.plaintextToSetID[x] = self.groupID
+        self.plaintextFrequency[x] = 1
+        self.plaintextGroups[self.groupID] = []
+        self.salts[self.groupID] = []
+        self.groupID = self.groupID + 1
+
+        logging.debug("Find a new plaintext: {}".format(x))
       else:
-        self.ciphertextFrequency[x] += 1
+        self.plaintextFrequency[x] += 1
 
-      # This variable indicates whether a group is found for the current plaintext.
+      # Find all groups for this plaintext x.
+      print(self.plaintextToSetID)
+      groupID = self.plaintextToSetID[x]
+      allGroups = self.plaintextGroups[groupID]
+
+      # This variable indicates whether there is a group that can contain x.
       find = False
-
-      for group in self.ciphertextGroups:
-        # Create an array of [variable, frequency]
-        arr = [[x, self.ciphertextFrequency[x]]]
-        # Append all the elements in group to the frequency array.
+      for group in allGroups:
+        arr = [[x, self.plaintextFrequency[x]]]
         for g in group:
-          arr.append([g, self.ciphertextFrequency[g]])
-
+          arr.append([g, self.plaintextFrequency[g]])
         variance = Utils.calculateVariance(arr)
-
-        # Test if variance does not exceed the threshold.
-        # If so, we add this element into the group.
-        if variance <= self.vThreshold and len(group) <= self.maximumNumber:
-          logging.debug("The variance exceeds!", arr)
+        # Calculate variance and check it.
+        if variance <= self.vThreshold:
+          if x not in g and len(g) + 1 <= self.maximumNumber:
+            g.append([x])
           find = True
-          group.add(x)
-
-          # TODO: Readjust salt informations.
+          logging.debug("We have found the group!")
           break
-
-        elif variance > self.vThreshold and x in group:
-          # TODO: Split the group into two groups, but we need also record the split point.
-          pass
-      # If there is no such group in the ciphertext group,
-      # we create a new group.
+      
       if not find:
-        logging.debug("We did not find a satisfying group!")
-        logging.debug("Add new")
-        self.ciphertextGroups.append(set([x]))
-        # TODO: Generate new salts?
-        self.salts[self.ciphertextGroups[-1]] = []
+        allGroups.append(set([x]))
+        logging.debug("Not found for {}".format(x))
+
+      salts = self.salts[groupID]
+      # Start to encrypt the plaintext.
+      sampleNewSalt = np.random.binomial(1, self.p)
+      ans = ''
+      if sampleNewSalt:
+        newSalt = ''.join(np.random.choice(self.ALPHABET, size=self.saltLen))
+        salts.append([newSalt, 1])
+        logging.debug("Generated a new salt: {}".format(newSalt))
+
+      else:
+        np.random.permutation(salts)
+        for salt in salts:
+          if (Utils.checkSalt(salt, salts)):
+            ans = salt
+            # Remember to increment the frequency of the selected salt.
+            salt[1] = salt[1] + 1
+            break
+            
+        if ans == '':
+          newSalt = ''.join(np.random.choice(self.ALPHABET, size=self.saltLen))
+          salts.append([newSalt, 1])
+          logging.debug("Generated a new salt: {}".format(newSalt))
+          ans = newSalt
+        
+      # Use this salt to encrypt the plaintext.
+      ciphertext = Utils.encryptAESECB([x + newSalt], self.key)
+      ciphertexts.append(ciphertext)
+
+    return ciphertexts
+
+      # # This variable indicates whether a group is found for the current plaintext.
+      # find = False
+
+      # for group in self.ciphertextGroups:
+      #   # Create an array of [variable, frequency]
+      #   arr = [[x, self.ciphertextFrequency[x]]]
+      #   # Append all the elements in group to the frequency array.
+      #   for g in group:
+      #     arr.append([g, self.ciphertextFrequency[g]])
+
+      #   variance = Utils.calculateVariance(arr)
+
+      #   # Test if variance does not exceed the threshold.
+      #   # If so, we add this element into the group.
+      #   if variance <= self.vThreshold and len(group) <= self.maximumNumber:
+      #     logging.debug("The variance exceeds!", arr)
+      #     find = True
+      #     group.add(x)
+
+      #     # TODO: Readjust salt informations.
+      #     break
+
+      #   elif variance > self.vThreshold and x in group:
+      #     # TODO: Split the group into two groups, but we need also record the split point.
+      #     pass
+      # # If there is no such group in the ciphertext group,
+      # # we create a new group.
+      # if not find:
+      #   logging.debug("We did not find a satisfying group!")
+      #   logging.debug("Add new")
+      #   self.ciphertextGroups.append(set([x]))
+      #   # TODO: Generate new salts?
+      #   self.salts[self.ciphertextGroups[-1]] = []

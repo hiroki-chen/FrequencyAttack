@@ -29,5 +29,5 @@ if __name__ == '__main__':
   # print(accuracy)
   # accuracy = Utils.calculateAccuracy(ia.LPOpmization([1,1,1,2,5,5,5], ciphertext), real)
   # print(accuracy)
-  smoother = fs.Smoother('', 3.5, 4, str(np.random.randint(1, 10)))
-  smoother.encrypt(['1', '2', '3'])
+  smoother = fs.Smoother('', 3.5, 40, str(np.random.randint(1, 10)), 0.01, 16)
+  print(smoother.encrypt(['1', '2', '3', '3', '3']))
