@@ -14,13 +14,17 @@
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  """
-import copy
 import numpy as np
 import Utils
 import tqdm
 import logging
 import sys
 import string
+
+'''
+salts = <groupID> -> array: tuple <salt, frequency>
+plaintextToSetId = <plaintext> -> setId
+'''
 
 class Smoother:
   def __init__(self, distribution, vThreshold, maximumNumber, key, p, saltLen):
@@ -126,36 +130,8 @@ class Smoother:
 
     return ciphertexts
 
-      # # This variable indicates whether a group is found for the current plaintext.
-      # find = False
-
-      # for group in self.ciphertextGroups:
-      #   # Create an array of [variable, frequency]
-      #   arr = [[x, self.ciphertextFrequency[x]]]
-      #   # Append all the elements in group to the frequency array.
-      #   for g in group:
-      #     arr.append([g, self.ciphertextFrequency[g]])
-
-      #   variance = Utils.calculateVariance(arr)
-
-      #   # Test if variance does not exceed the threshold.
-      #   # If so, we add this element into the group.
-      #   if variance <= self.vThreshold and len(group) <= self.maximumNumber:
-      #     logging.debug("The variance exceeds!", arr)
-      #     find = True
-      #     group.add(x)
-
-      #     # TODO: Readjust salt informations.
-      #     break
-
-      #   elif variance > self.vThreshold and x in group:
-      #     # TODO: Split the group into two groups, but we need also record the split point.
-      #     pass
-      # # If there is no such group in the ciphertext group,
-      # # we create a new group.
-      # if not find:
-      #   logging.debug("We did not find a satisfying group!")
-      #   logging.debug("Add new")
-      #   self.ciphertextGroups.append(set([x]))
-      #   # TODO: Generate new salts?
-      #   self.salts[self.ciphertextGroups[-1]] = []
+  def checkSalt(self, salt, salts, plaintextNum):
+    saltFrequency = salt[1]
+    # We should check if the salt can efficiently 'smooth' the plaintext's frequency.
+    
+    

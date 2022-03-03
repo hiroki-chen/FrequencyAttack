@@ -64,12 +64,14 @@ def frequencyAnalysis(auxiliaryDataset, ciphertext):
 
   return guess
 
-# This algorithm implements the linear optimization problem defined in NKW's paper.
-# This algorithm also utilizes the Hungarian algorithm for bipartite graph matching
-# problem that minimized the cost for two nodes.
-# The idea behind l_p optimization is to find a minimized cost for matching the cipher-
-# text to its corresponding plaintext by the l_p norm.
 def LPOpmization(auxiliaryDataset, ciphertext, p=2):
+  '''
+  This algorithm implements the linear optimization problem defined in NKW's paper.
+  This algorithm also utilizes the Hungarian algorithm for bipartite graph matching
+  problem that minimized the cost for two nodes.
+  The idea behind l_p optimization is to find a minimized cost for matching the cipher-
+  text to its corresponding plaintext by the l_p norm.
+  '''
   histAuxiliary, histCiphertext = prepareData(auxiliaryDataset, ciphertext)
 
   print(histAuxiliary, histCiphertext)
@@ -91,8 +93,22 @@ def LPOpmization(auxiliaryDataset, ciphertext, p=2):
      ans.append((histCiphertext[guess[0][i]][0], histAuxiliary[guess[0][i]][0]))
   return ans
 
-# This algorithm implements the MLE attack written in the paper The Tao of Inference in 
-# Privacy-Preserving Databases by Grubbs et al, in VLDB 2018.
-# Other literature has pointed out that frequency analysis is also MLE.
 def maximumLikelihoodEstimationAttack(auxiliaryDataset, ciphertext):
+  '''
+  This algorithm implements the MLE attack written in the paper The Tao of Inference in 
+  Privacy-Preserving Databases by Grubbs et al, in VLDB 2018.
+  Other literature has pointed out that frequency analysis is also MLE.
+  '''
   histAuxiliary, histCiphertext = prepareData(auxiliaryDataset, ciphertext)
+  dimension = len(histAuxiliary)
+  costMatrix = [[0] * dimension] * dimension
+
+  for i in range(len(costMatrix)):
+    for j in range(len(costMatrix[0])):
+      costMatrix[i][j] = histCiphertext[ciphertext[i]] * np.log(histAuxiliary[j])
+
+  guess = Hungarian.hungarian(np.matrix(np.arry(costMatrix)).reshape(dimension, dimension))
+  ans = []
+  for i in range(len(guess[0])):
+     ans.append((histCiphertext[guess[0][i]][0], histAuxiliary[guess[0][i]][0]))
+  return ans

@@ -20,14 +20,5 @@ import numpy as np
 import FrequencySmoothing as fs
 
 if __name__ == '__main__':
-  # real = Utils.encryptAESECB([1,1,2,5,5,5], 'fuck')
-  # print(real)
-  # ciphertext = [x[0] for x in real]
-  # guess = ia.frequencyAnalysis([1,1,2,5,5,5,5,5], ciphertext)
-  # print(guess)
-  # accuracy = Utils.calculateAccuracy(guess, real)
-  # print(accuracy)
-  # accuracy = Utils.calculateAccuracy(ia.LPOpmization([1,1,1,2,5,5,5], ciphertext), real)
-  # print(accuracy)
   smoother = fs.Smoother('', 3.5, 40, str(np.random.randint(1, 10)), 0.01, 16)
   print(smoother.encrypt(['1', '2', '3', '3', '3']))

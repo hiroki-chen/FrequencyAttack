@@ -86,7 +86,3 @@ def calculateHistogram(samples):
 def calculateVariance(group):
   data = np.array([_[1] for _ in group])
   return np.var(data.astype(np.float))
-
-def checkSalt(salt, salts):
-  # TODO.
-  return True
